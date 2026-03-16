@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZaBot — Za6zo Support Widget</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      background: #f0f0f0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Demo page background */
+    .demo-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #aaa;
+      font-size: 15px;
+      text-align: center;
+      padding: 20px;
+    }
+
+    /* ── Widget root — fixed bottom right ── */
+    #zw-root {
+      --zr-red:       #F05A5A;
+      --zr-red-deep:  #E8353A;
+      --zr-red-dark:  #C93030;
+      --zr-red-light: #FFF0F0;
+      --zr-red-mid:   #FDDADA;
+      --zr-red-glow:  rgba(240,90,90,0.22);
+      --zr-white:     #FFFFFF;
+      --zr-off:       #FAFAFA;
+      --zr-text:      #1A1A1A;
+      --zr-text2:     #4A4A4A;
+      --zr-muted:     #9A9A9A;
+      --zr-border:    #EBEBEB;
+      --zr-shadow:    0 16px 56px rgba(240,90,90,0.18), 0 4px 20px rgba(0,0,0,0.10);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 14px;
+      z-index: 99999;
+    }
+
+    /* ── FAB button ── */
+    #zw-fab {
+      width: 62px; height: 62px; border-radius: 50%;
+      background: var(--zr-red);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px var(--zr-red-glow), 0 2px 8px rgba(0,0,0,0.12);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; flex-shrink: 0;
+    }
+    #zw-fab:hover {
+      transform: scale(1.07);
+      box-shadow: 0 8px 30px rgba(240,90,90,0.35), 0 2px 8px rgba(0,0,0,0.12);
+    }
+    #zw-notif {
+      position: absolute; top: 1px; right: 1px;
+      width: 14px; height: 14px; background: #1A1A1A;
+      border-radius: 50%; border: 2.5px solid white;
+      animation: zw-pulse 2s infinite;
+    }
+    @keyframes zw-pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.3);} }
+
+    /* ── Chat window ── */
+    #zw-win {
+      width: 355px; border-radius: 20px;
+      background: var(--zr-white);
+      border: 1px solid var(--zr-border);
+      box-shadow: var(--zr-shadow);
+      display: flex; flex-direction: column;
+      overflow: hidden; height: 500px;
+      transform-origin: bottom right;
+      transform: scale(0.88) translateY(12px);
+      opacity: 0; pointer-events: none;
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.22s;
+    }
+    #zw-win.open {
+      transform: scale(1) translateY(0);
+      opacity: 1; pointer-events: all;
+    }
+
+    /* ── Header ── */
+    #zw-header {
+      background: var(--zr-red);
+      padding: 14px 16px 13px;
+      display: flex; align-items: center; gap: 11px;
+      flex-shrink: 0; position: relative; overflow: hidden;
+    }
+    #zw-header::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: radial-gradient(circle at 80% 50%, rgba(255,255,255,0.1) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    #zw-logo {
+      width: 42px; height: 42px; border-radius: 10px;
+      background: white;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    #zw-hinfo { flex: 1; }
+    #zw-hname {
+      font-size: 14px; font-weight: 700;
+      color: white; letter-spacing: 0.01em;
+    }
+    #zw-htagline {
+      font-size: 10.5px; color: rgba(255,255,255,0.82);
+      margin-top: 1px; font-style: italic; font-weight: 400;
+    }
+    #zw-hstatus {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; color: rgba(255,255,255,0.75); margin-top: 3px;
+    }
+    .zw-green-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #4ADE80; animation: zw-pulse 2s infinite;
+    }
+    #zw-close {
+      background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.25);
+      color: white; cursor: pointer; width: 30px; height: 30px;
+      border-radius: 8px; font-size: 13px; display: flex;
+      align-items: center; justify-content: center;
+      transition: background 0.15s; flex-shrink: 0;
+    }
+    #zw-close:hover { background: rgba(255,255,255,0.3); }
+
+    /* ── Welcome banner ── */
+    #zw-banner {
+      background: var(--zr-red-light);
+      border-bottom: 1px solid var(--zr-red-mid);
+      padding: 9px 14px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11.5px; color: var(--zr-red-deep);
+      font-weight: 500; flex-shrink: 0;
+    }
+
+    /* ── Messages ── */
+    #zw-msgs {
+      flex: 1; overflow-y: auto;
+      padding: 14px 12px;
+      display: flex; flex-direction: column; gap: 10px;
+      background: var(--zr-off);
+    }
+    #zw-msgs::-webkit-scrollbar { width: 3px; }
+    #zw-msgs::-webkit-scrollbar-thumb { background: var(--zr-border); border-radius: 3px; }
+
+    .zw-msg {
+      display: flex; flex-direction: column;
+      max-width: 83%; animation: zw-in 0.22s ease;
+    }
+    @keyframes zw-in {
+      from { opacity:0; transform:translateY(7px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .zw-msg.bot {
+      align-self: flex-start;
+      flex-direction: row; align-items: flex-end;
+      gap: 7px; max-width: 91%;
+    }
+    .zw-msg.user { align-self: flex-end; }
+
+    .zw-bot-av {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: var(--zr-red); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 18px;
+    }
+    .zw-msg-wrap { display: flex; flex-direction: column; }
+
+    .zw-bubble {
+      padding: 10px 13px; border-radius: 16px;
+      font-size: 12.5px; line-height: 1.65; white-space: pre-wrap;
+    }
+    .zw-msg.bot .zw-bubble {
+      background: white; color: var(--zr-text);
+      border: 1px solid var(--zr-border);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .zw-msg.user .zw-bubble {
+      background: var(--zr-red); color: white;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 8px var(--zr-red-glow);
+    }
+    .zw-time {
+      font-size: 9.5px; color: var(--zr-muted);
+      margin-top: 3px; padding: 0 3px;
+    }
+    .zw-msg.user .zw-time { text-align: right; }
+
+    /* ── Typing indicator ── */
+    #zw-typing {
+      display: none;
+      flex-direction: row; align-items: flex-end;
+      gap: 7px; align-self: flex-start;
+      animation: zw-in 0.22s ease;
+    }
+    #zw-typing.show { display: flex; }
+    #zw-typing .zw-bubble {
+      background: white; border: 1px solid var(--zr-border);
+      border-bottom-left-radius: 4px; padding: 12px 15px;
+      display: flex; gap: 5px; align-items: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .zw-td {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--zr-red); animation: zw-bounce 1.1s infinite;
+    }
+    .zw-td:nth-child(2) { animation-delay: .18s; }
+    .zw-td:nth-child(3) { animation-delay: .36s; }
+    @keyframes zw-bounce {
+      0%,60%,100% { transform: translateY(0); }
+      30%          { transform: translateY(-6px); }
+    }
+
+    /* ── Quick replies ── */
+    #zw-quick {
+      padding: 8px 12px 6px;
+      display: flex; gap: 6px; flex-wrap: wrap;
+      background: var(--zr-white);
+      border-top: 1px solid var(--zr-border);
+      flex-shrink: 0;
+    }c:\Users\thesy\Downloads\chat_widget.html
+    .zw-qbtn {
+      background: var(--zr-red-light); border: 1px solid var(--zr-red-mid);
+      color: var(--zr-red-deep); font-size: 11px; font-weight: 600;
+      padding: 5px 11px; border-radius: 20px; cursor: pointer;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .zw-qbtn:hover { background: var(--zr-red); color: white; border-color: var(--zr-red); }
+
+    /* ── Input row ── */
+    #zw-input-row {
+      padding: 10px 12px 11px;
+      background: white; border-top: 1px solid var(--zr-border);
+      display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+    }
+    #zw-input {
+      flex: 1; background: var(--zr-off);
+      border: 1.5px solid var(--zr-border); border-radius: 12px;
+      padding: 9px 13px; font-size: 12.5px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      outline: none; resize: none; max-height: 80px;
+      line-height: 1.5; color: var(--zr-text);
+      transition: border-color 0.15s;
+    }
+    #zw-input:focus { border-color: var(--zr-red); background: white; }
+    #zw-input::placeholder { color: var(--zr-muted); }
+
+    #zw-send {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--zr-red); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px var(--zr-red-glow);
+      transition: background 0.15s, transform 0.1s;
+    }
+    #zw-send:hover  { background: var(--zr-red-dark); }
+    #zw-send:active { transform: scale(0.92); }
+    #zw-send svg { width: 15px; height: 15px; fill: white; }
+
+    /* ── Footer ── */
+    #zw-footer {
+      text-align: center; font-size: 9.5px;
+      color: var(--zr-muted); padding: 5px 0 7px;
+      background: white; flex-shrink: 0; letter-spacing: 0.02em;
+    }
+    #zw-footer b { color: var(--zr-red); }
+  </style>
+</head>
+<body>
+
+  <!-- Demo page content -->
+  <div class="demo-page">
+    <div>
+      <p style="font-size:22px; margin-bottom:8px;">🚗</p>
+      <p style="color:#bbb;">Za6zo Website</p>
+      <p style="color:#ccc; font-size:13px; margin-top:6px;">ZaBot appears in the bottom-right corner ↘</p>
+    </div>
+  </div>
+
+  <!-- ── ZaBot Widget ── -->
+  <div id="zw-root">
+
+    <!-- Chat window -->
+    <div id="zw-win">
+
+      <!-- Header -->
+      <div id="zw-header">
+        <div id="zw-logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M4 6h14L8 14h13" stroke="#F05A5A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="21" r="4" fill="#F05A5A"/>
+            <circle cx="20" cy="21" r="1.8" fill="white"/>
+          </svg>
+        </div>
+        <div id="zw-hinfo">
+          <div id="zw-hname">ZaBot · Za6zo Support</div>
+          <div id="zw-htagline">Tap. Ride. Done.</div>
+          <div id="zw-hstatus">
+            <div class="zw-green-dot"></div>
+            Online &nbsp;·&nbsp; Urdu &amp; English
+          </div>
+        </div>
+        <button id="zw-close" onclick="zwToggle()">✕</button>
+      </div>
+
+      <!-- Welcome banner -->
+      <div id="zw-banner">
+        🚗 &nbsp; Pakistan ka #1 zero-commission ride app — kuch bhi poochein!
+      </div>
+
+      <!-- Messages -->
+      <div id="zw-msgs">
+        <div class="zw-msg bot">
+          <div class="zw-bot-av">
+            <svg viewBox="0 0 24 24" fill="white" width="14" height="14">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+            </svg>
+          </div>
+          <div class="zw-msg-wrap">
+            <div class="zw-bubble">Assalam o Alaikum! 👋<br><br>Main <strong>ZaBot</strong> hoon — <strong>Za6zo</strong> ka official support assistant.<br><br>Urdu ya English — jis mein chahein poochein. Main hamesha haazir hoon! 🚗</div>
+            <div class="zw-time">Abhi · ZaBot</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div id="zw-typing">
+        <div class="zw-bot-av">
+          <svg viewBox="0 0 24 24" fill="white" width="14" height="14">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+          </svg>
+        </div>
+        <div class="zw-bubble">
+          <div class="zw-td"></div>
+          <div class="zw-td"></div>
+          <div class="zw-td"></div>
+        </div>
+      </div>
+
+      <!-- Quick reply chips -->
+      <div id="zw-quick">
+        <button class="zw-qbtn" onclick="zwQuick('Ride kaise book karein?')">📍 Ride Book</button>
+        <button class="zw-qbtn" onclick="zwQuick('Driver kaise bante hain?')">🚗 Driver Bano</button>
+        <button class="zw-qbtn" onclick="zwQuick('Pricing kya hai?')">💰 Pricing</button>
+        <button class="zw-qbtn" onclick="zwQuick('City to city rides hain?')">🛣️ Intercity</button>
+      </div>
+
+      <!-- Input -->
+      <div id="zw-input-row">
+        <textarea id="zw-input" placeholder="Kuch bhi poochein... (Urdu / English)" rows="1"></textarea>
+        <button id="zw-send" onclick="zwSend()">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+
+      <div id="zw-footer">Powered by <b>ZaBot AI</b> &nbsp;·&nbsp; Za6zo — Har Cherta Za6Zo</div>
+
+    </div><!-- end #zw-win -->
+
+    <!-- FAB button -->
+    <button id="zw-fab" onclick="zwToggle()">
+      <div id="zw-notif"></div>
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M5 6h13l-9 7.5h11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="20.5" cy="20.5" r="4" fill="white"/>
+        <circle cx="20.5" cy="20.5" r="1.8" fill="#F05A5A"/>
+      </svg>
+    </button>
+
+  </div><!-- end #zw-root -->
+
+  <script>
+    // ── Config — update these two lines after Railway deployment ──
+    const ZW_API = 'http://localhost:8000/chat';
+    const ZW_KEY = 'zabot-dev-key-change-in-production';
+
+    let zwOpen = false;
+    const ZW_SESSION = 'zw-' + Math.random().toString(36).slice(2, 9);
+
+    function zwToggle() {
+      zwOpen = !zwOpen;
+      document.getElementById('zw-win').classList.toggle('open', zwOpen);
+      document.getElementById('zw-notif').style.display = zwOpen ? 'none' : 'block';
+      if (zwOpen) setTimeout(() => document.getElementById('zw-input').focus(), 350);
+    }
+
+    function zwTime() {
+      return new Date().toLocaleTimeString('ur-PK', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function zwAddMsg(text, role) {
+      const msgs = document.getElementById('zw-msgs');
+      const d = document.createElement('div');
+      d.className = 'zw-msg ' + role;
+      const safe = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+      if (role === 'bot') {
+        d.innerHTML = `
+          <div class="zw-bot-av">
+            <svg viewBox="0 0 24 24" fill="white" width="14" height="14">
+              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+            </svg>
+          </div>
+          <div class="zw-msg-wrap">
+            <div class="zw-bubble">${safe}</div>
+            <div class="zw-time">${zwTime()} · ZaBot</div>
+          </div>`;
+      } else {
+        d.innerHTML = `
+          <div class="zw-bubble">${safe}</div>
+          <div class="zw-time">${zwTime()} · Aap</div>`;
+      }
+      msgs.appendChild(d);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function zwShowTyping() {
+      const t = document.getElementById('zw-typing');
+      const msgs = document.getElementById('zw-msgs');
+      t.classList.add('show');
+      msgs.appendChild(t);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function zwHideTyping() {
+      document.getElementById('zw-typing').classList.remove('show');
+    }
+
+    async function zwSend() {
+      const inp = document.getElementById('zw-input');
+      const text = inp.value.trim();
+      if (!text) return;
+
+      inp.value = '';
+      inp.style.height = 'auto';
+      document.getElementById('zw-quick').style.display = 'none';
+      zwAddMsg(text, 'user');
+      zwShowTyping();
+
+      try {
+        const res = await fetch(ZW_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ZW_KEY
+          },
+          body: JSON.stringify({ message: text, session_id: ZW_SESSION })
+        });
+
+        if (!res.ok) throw new Error('API error ' + res.status);
+        const data = await res.json();
+        zwHideTyping();
+        zwAddMsg(data.reply || 'Kuch masla aa gaya. Dobara koshish karein.', 'bot');
+
+      } catch (e) {
+        zwHideTyping();
+        // Demo fallback — shows realistic answers when backend is not running
+        const demos = [
+          'Za6zo Pakistan ka #1 zero-commission ride-sharing app hai!\n\nPassengers ke liye bilkul **free** — koi surge pricing nahi. Drivers **100%** kamaate hain, koi commission nahi.\n\nKuch aur poochna ho toh zaroor batayein! 😊',
+          'Za6zo mein **7 vehicle types** hain:\n• Sedan — AC comfort\n• Mini — budget friendly\n• Bike — traffic se bachao\n• Rickshaw — shortcut king\n• Van — poora khandan\n• Pickup — heavy load\n• Bus — badi group\n\nKuch aur poochna ho toh zaroor batayein! 😊',
+          'Driver banne ke liye **za6zo.com** par jayen aur "Become a Driver" click karein.\n\nPehla mahina bilkul **FREE** hai aur commission **ZERO** percent hai!\n\nKuch aur poochna ho toh zaroor batayein! 😊',
+          'Za6zo ki **city-to-city** service available hai! Aik shehar se doosre shehar tak comfortable aur affordable safar.\n\nAirport pickup bhi available hai!\n\nKuch aur poochna ho toh zaroor batayein! 😊'
+        ];
+        zwAddMsg(demos[Math.floor(Math.random() * demos.length)], 'bot');
+      }
+    }
+
+    function zwQuick(text) {
+      document.getElementById('zw-input').value = text;
+      zwSend();
+    }
+
+    // Auto-resize textarea as user types
+    document.getElementById('zw-input').addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+    });
+
+    // Send on Enter, new line on Shift+Enter
+    document.getElementById('zw-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        zwSend();
+      }
+    });
+
+    // Auto-open widget after 1.5 seconds
+    setTimeout(() => zwToggle(), 1500);
+  </script>
+
+</body>
+</html>
