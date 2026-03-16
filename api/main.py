@@ -56,8 +56,8 @@ async def startup_event():
         print("✅ ChromaDB found — skipping ingestion")
 
     # Pre-load the RAG chain so first user request is fast
-    from bot.rag_chain import get_chain
-    get_chain()
+    from bot.rag_chain import _get_components
+    _get_components()
     print("✅ ZaBot is ready")
 
 
