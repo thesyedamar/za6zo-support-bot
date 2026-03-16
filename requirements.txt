@@ -1,8 +1,13 @@
 fastapi
-uvicorn
+uvicorn[standard]
 langchain
+langchain-core
+langchain-community
 langchain-google-genai
+langchain-chroma
+langchain-text-splitters
 chromadb
+google-generativeai
 python-dotenv
 twilio
 pydantic
