@@ -60,7 +60,11 @@ async def startup_event():
     _get_components()
     print("✅ ZaBot is ready")
 
-
+@app.get("/widget", response_class=HTMLResponse)
+def serve_widget():
+    widget_path = os.path.join(os.path.dirname(__file__), "..", "widget", "chat_widget.html")
+    with open(widget_path, "r", encoding="utf-8") as f:
+        return f.read()
 @app.get("/")
 def root():
     return {"status": "ZaBot is live", "app": "Za6zo Support Bot", "version": "1.0.0"}
