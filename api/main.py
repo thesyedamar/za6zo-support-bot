@@ -1,17 +1,16 @@
-# api/main.py — full updated file
+# api/main.py
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
-from bot.rag_chain import ask_zabot
-from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 app = FastAPI(
-    title="Za6zoBot — Za6zo Support Bot",
+    title="ZaBot — Za6zo Support Bot",
     description="AI-powered support bot for Za6zo",
     version="1.0.0"
 )
@@ -44,10 +43,6 @@ def verify_api_key(x_api_key: str = Header(None)):
 
 @app.on_event("startup")
 async def startup_event():
-    """
-    Runs automatically when the server starts.
-    If ChromaDB doesn't exist (first deploy or reset), builds it from knowledge base.
-    """
     chroma_path = "chroma_db"
     if not os.path.exists(chroma_path) or not os.listdir(chroma_path):
         print("🔄 ChromaDB not found — running ingestion...")
@@ -57,24 +52,26 @@ async def startup_event():
     else:
         print("✅ ChromaDB found — skipping ingestion")
 
-    # Pre-load the RAG chain so first user request is fast
     from bot.rag_chain import _get_components
     _get_components()
     print("✅ ZaBot is ready")
+
+
+@app.get("/")
+def root():
+    return {"status": "ZaBot is live", "app": "Za6zo Support Bot", "version": "1.0.0"}
+
+
+@app.api_route("/health", methods=["GET", "HEAD"])
+def health():
+    return {"status": "ok", "bot": "ZaBot"}
+
 
 @app.get("/widget", response_class=HTMLResponse)
 def serve_widget():
     widget_path = os.path.join(os.path.dirname(__file__), "..", "widget", "chat_widget.html")
     with open(widget_path, "r", encoding="utf-8") as f:
         return f.read()
-@app.get("/")
-def root():
-    return {"status": "ZaBot is live", "app": "Za6zo Support Bot", "version": "1.0.0"}
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "bot": "ZaBot"}
 
 
 @app.post("/chat", response_model=ChatResponse)
