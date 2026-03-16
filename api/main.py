@@ -1,10 +1,12 @@
 # api/main.py — full updated file
 
 from fastapi import FastAPI, HTTPException, Depends, Header
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
+from bot.rag_chain import ask_zabot
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
